@@ -1,0 +1,9 @@
+{
+  "name": "flight-optimizer",
+  "description": "Multi-leg flight search with cost-duration-stop scoring, batch sweep collection, and analysis",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["flights", "travel", "optimization", "duffel"]
+}
