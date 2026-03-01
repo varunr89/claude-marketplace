@@ -1,0 +1,9 @@
+{
+  "name": "codex-collab",
+  "description": "Automated Codex CLI reviews during design and implementation phases via Stop hooks",
+  "version": "1.0.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["codex", "code-review", "automation", "ci"]
+}
