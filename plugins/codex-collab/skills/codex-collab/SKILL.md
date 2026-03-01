@@ -1,4 +1,5 @@
 ---
+name: codex-collab
 description: "Guides Claude's behavior during automated Codex-collaborative development sessions"
 ---
 
