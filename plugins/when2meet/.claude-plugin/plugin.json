@@ -1,0 +1,9 @@
+{
+  "name": "when2meet",
+  "description": "Create When2Meet events and pre-fill availability programmatically via reverse-engineered API",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["scheduling", "when2meet", "automation"]
+}
