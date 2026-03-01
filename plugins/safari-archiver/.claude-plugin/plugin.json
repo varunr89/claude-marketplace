@@ -1,0 +1,9 @@
+{
+  "name": "safari-archiver",
+  "description": "Archive Safari pages and PDFs to Obsidian as clean markdown with images and frontmatter",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["safari", "obsidian", "markdown", "archival", "pdf"]
+}
