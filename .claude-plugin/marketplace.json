@@ -1,0 +1,79 @@
+{
+  "name": "varunr-marketplace",
+  "owner": {
+    "name": "Varun R",
+    "url": "https://github.com/varunr89"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for OCR, scheduling, flight search, transcription, and developer workflows",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "phone-a-friend",
+      "source": { "source": "url", "url": "https://github.com/varunr89/phone-a-friend-skill.git" },
+      "description": "Consult other AI models for second opinions and code reviews",
+      "version": "1.0.0"
+    },
+    {
+      "name": "resume-tailoring",
+      "source": { "source": "url", "url": "https://github.com/varunr89/resume-tailoring-skill.git" },
+      "description": "Tailored resumes with company research and branching experience discovery",
+      "version": "1.0.0"
+    },
+    {
+      "name": "devlog",
+      "source": { "source": "url", "url": "https://github.com/varunr89/devlog.git" },
+      "description": "Auto-generate daily dev log blog posts from Claude Code insights",
+      "version": "0.1.0"
+    },
+    {
+      "name": "codex-collab",
+      "source": "./plugins/codex-collab",
+      "description": "Automated Codex CLI reviews during design and implementation",
+      "version": "1.0.0"
+    },
+    {
+      "name": "ocr-toolkit",
+      "source": "./plugins/ocr-toolkit",
+      "description": "Extract text from images, PDFs, and videos",
+      "version": "0.1.0"
+    },
+    {
+      "name": "when2meet",
+      "source": "./plugins/when2meet",
+      "description": "Create When2Meet events and pre-fill availability",
+      "version": "0.1.0"
+    },
+    {
+      "name": "safari-archiver",
+      "source": "./plugins/safari-archiver",
+      "description": "Archive Safari pages to Obsidian as clean markdown",
+      "version": "0.1.0"
+    },
+    {
+      "name": "transcription",
+      "source": "./plugins/transcription",
+      "description": "Fast audio transcription using MLX Whisper",
+      "version": "0.1.0"
+    },
+    {
+      "name": "flight-optimizer",
+      "source": "./plugins/flight-optimizer",
+      "description": "Multi-leg flight search with scoring and batch sweep",
+      "version": "0.1.0"
+    },
+    {
+      "name": "scenario-test",
+      "source": "./plugins/scenario-test",
+      "description": "Azure infrastructure scenario testing",
+      "version": "0.1.0"
+    },
+    {
+      "name": "config-sync",
+      "source": "./plugins/config-sync",
+      "description": "Sync ~/.claude/ config via git on session start/end",
+      "version": "0.1.0"
+    }
+  ]
+}
