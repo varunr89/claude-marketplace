@@ -1,0 +1,4 @@
+{
+  "os": ["darwin", "linux"],
+  "requiredBinaries": ["git", "rsync"]
+}

@@ -1,0 +1,4 @@
+{
+  "os": ["darwin"],
+  "requiredBinaries": ["python3"]
+}
