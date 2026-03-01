@@ -1,0 +1,9 @@
+{
+  "name": "config-sync",
+  "description": "Automatically sync ~/.claude/ configuration to a git repo on session start and end",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["config", "sync", "git", "backup"]
+}

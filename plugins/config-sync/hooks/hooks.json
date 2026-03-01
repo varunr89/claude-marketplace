@@ -1,0 +1,14 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session_start.sh",
+      "timeout": 30
+    },
+    {
+      "event": "SessionEnd",
+      "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/session_end.sh",
+      "timeout": 30
+    }
+  ]
+}
