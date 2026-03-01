@@ -1,0 +1,9 @@
+{
+  "name": "ocr-toolkit",
+  "description": "Extract text from images, PDFs, and videos using Apple Vision, tesseract, and MLX OCR",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["ocr", "pdf", "video", "apple-vision", "tesseract", "mlx"]
+}
