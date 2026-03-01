@@ -1,0 +1,9 @@
+{
+  "name": "transcription",
+  "description": "Fast audio transcription using MLX Whisper on Apple Silicon with GPU/Neural Engine acceleration",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["transcription", "whisper", "mlx", "apple-silicon", "audio"]
+}
