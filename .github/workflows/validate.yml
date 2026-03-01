@@ -1,0 +1,68 @@
+name: Validate Plugins
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  static:
+    name: Static validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install validation deps
+        run: cd .github/scripts && bun install
+
+      - name: Validate plugin structure
+        run: bun .github/scripts/validate-structure.ts .
+
+      - name: ShellCheck
+        run: |
+          SCRIPTS=$(find plugins/ -name "*.sh" -type f 2>/dev/null || true)
+          if [ -n "$SCRIPTS" ]; then
+            echo "$SCRIPTS" | xargs shellcheck
+          else
+            echo "No shell scripts found, skipping"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Python unit tests
+        run: |
+          FOUND=0
+          for plugin_dir in plugins/*/; do
+            if [ -d "$plugin_dir/tests" ] && ls "$plugin_dir/tests"/test_*.py 1>/dev/null 2>&1; then
+              echo "=== Testing $plugin_dir ==="
+              python -m venv "$plugin_dir/.venv"
+              source "$plugin_dir/.venv/bin/activate"
+              pip install -q pytest
+              if [ -f "$plugin_dir/tests/requirements.txt" ]; then
+                pip install -q -r "$plugin_dir/tests/requirements.txt"
+              fi
+              pytest "$plugin_dir/tests/" -v
+              deactivate
+              FOUND=1
+            fi
+          done
+          if [ "$FOUND" -eq 0 ]; then
+            echo "No Python test suites found, skipping"
+          fi
+
+  install-load:
+    name: Fresh install E2E ($0 API)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run fresh install test
+        run: bash ci/test-fresh-install.sh "$PWD"
