@@ -74,6 +74,12 @@
       "source": "./plugins/config-sync",
       "description": "Sync ~/.claude/ config via git on session start/end",
       "version": "0.1.0"
+    },
+    {
+      "name": "paper-banana",
+      "source": "./plugins/paper-banana",
+      "description": "Generate publication-ready academic diagrams and plots from paper methodology",
+      "version": "0.1.0"
     }
   ]
 }
