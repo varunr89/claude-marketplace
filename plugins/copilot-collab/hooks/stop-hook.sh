@@ -45,15 +45,15 @@ fi
 # Parse frontmatter
 FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$STATE_FILE")
 
-PAUSED=$(echo "$FRONTMATTER" | grep '^paused:' | sed 's/paused: *//' || echo "false")
+PAUSED=$(echo "$FRONTMATTER" | grep '^paused:' | sed 's/paused: *//' | tr -d '[:space:]' || echo "false")
 if [[ "$PAUSED" = "true" ]]; then
   exit 0
 fi
 
-PHASE=$(echo "$FRONTMATTER" | grep '^phase:' | sed 's/phase: *//' || true)
-TASK_INDEX=$(echo "$FRONTMATTER" | grep '^task_index:' | sed 's/task_index: *//' || echo "0")
-GIT_CHECKPOINT=$(echo "$FRONTMATTER" | grep '^git_checkpoint:' | sed 's/git_checkpoint: *//' || echo "")
-PLAN_FILE=$(echo "$FRONTMATTER" | grep '^plan_file:' | sed 's/plan_file: *//' | sed 's/^"\(.*\)"$/\1/' || echo "")
+PHASE=$(echo "$FRONTMATTER" | grep '^phase:' | sed 's/phase: *//' | tr -d '[:space:]' || true)
+TASK_INDEX=$(echo "$FRONTMATTER" | grep '^task_index:' | sed 's/task_index: *//' | tr -d '[:space:]' || echo "0")
+GIT_CHECKPOINT=$(echo "$FRONTMATTER" | grep '^git_checkpoint:' | sed 's/git_checkpoint: *//' | tr -d '[:space:]' || echo "")
+PLAN_FILE=$(echo "$FRONTMATTER" | grep '^plan_file:' | sed 's/plan_file: *//' | sed 's/^"\(.*\)"$/\1/' | sed 's/[[:space:]]*$//' || echo "")
 
 # ── State machine ───────────────────────────────────────────────────
 case "$PHASE" in
@@ -67,7 +67,7 @@ case "$PHASE" in
   designing)
     # Find plan file
     if [[ -z "$PLAN_FILE" ]] || [[ ! -f "$PLAN_FILE" ]]; then
-      PLAN_FILE=$(find docs/plans/ -name "*.md" -type f 2>/dev/null | sort -r | head -1 || echo "")
+      PLAN_FILE=$(find "$REPO_ROOT/docs/plans/" -name "*.md" -type f 2>/dev/null | sort -r | head -1 || echo "")
     fi
 
     if [[ -z "$PLAN_FILE" ]] || [[ ! -f "$PLAN_FILE" ]]; then
@@ -129,8 +129,8 @@ case "$PHASE" in
       sed "s/^git_checkpoint: .*/git_checkpoint: $CURRENT_SHA/" > "$TEMP_FILE"
     mv "$TEMP_FILE" "$STATE_FILE"
 
-    CRITICAL_COUNT=$(echo "$REVIEW" | grep -ci "CRITICAL" || echo "0")
-    WARNING_COUNT=$(echo "$REVIEW" | grep -ci "WARNING" || echo "0")
+    CRITICAL_COUNT=$(echo "$REVIEW" | grep -ci "CRITICAL" || true)
+    WARNING_COUNT=$(echo "$REVIEW" | grep -ci "WARNING" || true)
 
     if [[ "$CRITICAL_COUNT" -eq 0 ]] && [[ "$WARNING_COUNT" -eq 0 ]]; then
       jq -n \

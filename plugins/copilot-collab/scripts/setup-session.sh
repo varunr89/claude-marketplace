@@ -55,8 +55,9 @@ mkdir -p "$SESSIONS_DIR"
 mkdir -p "$REPO_ROOT/.claude/copilot-collab/reviews"
 mkdir -p "$REPO_ROOT/.claude/copilot-collab/consultations"
 
-# ── Create session state ────────────────────────────────────────────
-cat > "$STATE_FILE" <<EOF
+# ── Create session state (atomic write via temp file) ───────────────
+TEMP_STATE="${STATE_FILE}.tmp.$$"
+cat > "$TEMP_STATE" <<EOF
 ---
 phase: designing
 task_index: 0
@@ -70,6 +71,7 @@ started_at: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 $TASK_DESC
 EOF
+mv "$TEMP_STATE" "$STATE_FILE"
 
 # Output activation message
 cat <<EOF

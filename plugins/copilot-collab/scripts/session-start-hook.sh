@@ -21,7 +21,7 @@ fi
 
 # Write to CLAUDE_ENV_FILE so the session ID persists
 if [[ -n "${CLAUDE_ENV_FILE:-}" ]]; then
-  echo "export CLAUDE_SESSION_ID=\"$SESSION_ID\"" >> "$CLAUDE_ENV_FILE"
+  printf 'export CLAUDE_SESSION_ID=%q\n' "$SESSION_ID" >> "$CLAUDE_ENV_FILE"
 fi
 
 # Run update check (non-blocking, ignore failures)

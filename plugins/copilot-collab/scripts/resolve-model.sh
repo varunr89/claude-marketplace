@@ -57,22 +57,21 @@ if [[ "$USE_CACHE" = "false" ]]; then
     OPENAI_MODELS=$(copilot help config 2>&1 | grep -oE '"gpt-[^"]*-codex"' | tr -d '"' | sort -t. -k2 -rn | head -5 || echo "")
     GOOGLE_MODELS=$(copilot help config 2>&1 | grep -oE '"gemini-[^"]*"' | tr -d '"' | sort -rn | head -5 || echo "")
 
-    # Write cache
-    cat > "$CACHE_FILE" <<CACHE_EOF
-{
-  "openai": "$(echo "$OPENAI_MODELS" | head -1)",
-  "google": "$(echo "$GOOGLE_MODELS" | head -1)",
-  "openai_all": "$(echo "$OPENAI_MODELS" | paste -sd ',' -)",
-  "google_all": "$(echo "$GOOGLE_MODELS" | paste -sd ',' -)",
-  "cached_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-}
-CACHE_EOF
+    # Write cache (use jq for safe JSON construction)
+    jq -n \
+      --arg openai "$(echo "$OPENAI_MODELS" | head -1)" \
+      --arg google "$(echo "$GOOGLE_MODELS" | head -1)" \
+      --arg openai_all "$(echo "$OPENAI_MODELS" | paste -sd ',' -)" \
+      --arg google_all "$(echo "$GOOGLE_MODELS" | paste -sd ',' -)" \
+      --arg cached_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{openai: $openai, google: $google, openai_all: $openai_all, google_all: $google_all, cached_at: $cached_at}' \
+      > "$CACHE_FILE"
   fi
 fi
 
 # ── Read from cache ───────────────────────────────────────────────
 if [[ -f "$CACHE_FILE" ]] && command -v jq &>/dev/null; then
-  MODEL=$(jq -r ".${VENDOR} // empty" "$CACHE_FILE")
+  MODEL=$(jq -r --arg v "$VENDOR" '.[$v] // empty' "$CACHE_FILE")
   if [[ -n "${MODEL:-}" ]]; then
     echo "$MODEL"
     exit 0

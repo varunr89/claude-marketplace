@@ -41,7 +41,8 @@ REVIEW_FILE="$REVIEW_DIR/design-review-$TIMESTAMP.md"
 PROMPT_FILE=$(mktemp)
 trap 'rm -f "$PROMPT_FILE"' EXIT
 
-cat > "$PROMPT_FILE" <<PROMPT_EOF
+# Write static prompt preamble
+cat > "$PROMPT_FILE" <<'PROMPT_EOF'
 Review this design plan for a software project. Be thorough and specific.
 
 Evaluate:
@@ -67,8 +68,9 @@ N issues found (X critical, Y warning, Z info).
 
 DESIGN PLAN:
 
-$PLAN_CONTENT
 PROMPT_EOF
+# Safely append untrusted plan content
+printf '%s\n' "$PLAN_CONTENT" >> "$PROMPT_FILE"
 
 # Send to Copilot CLI
 PROMPT_SIZE=$(wc -c < "$PROMPT_FILE" | tr -d ' ')
