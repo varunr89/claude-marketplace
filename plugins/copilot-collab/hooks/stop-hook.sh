@@ -25,6 +25,12 @@ if [[ -z "${SESSION_ID:-}" ]]; then
   exit 0
 fi
 
+# Validate session ID to prevent path traversal
+if ! [[ "$SESSION_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "copilot-collab: invalid session ID format" >&2
+  exit 0
+fi
+
 export COPILOT_COLLAB_SESSION_ID="$SESSION_ID"
 
 # Session-scoped paths
@@ -65,6 +71,10 @@ case "$PHASE" in
     ;;
 
   designing)
+    # Normalize plan_file to absolute path
+    if [[ -n "$PLAN_FILE" ]] && [[ "$PLAN_FILE" != /* ]]; then
+      PLAN_FILE="$REPO_ROOT/$PLAN_FILE"
+    fi
     # Find plan file
     if [[ -z "$PLAN_FILE" ]] || [[ ! -f "$PLAN_FILE" ]]; then
       PLAN_FILE=$(find "$REPO_ROOT/docs/plans/" -name "*.md" -type f 2>/dev/null | sort -r | head -1 || echo "")
@@ -129,8 +139,8 @@ case "$PHASE" in
       sed "s/^git_checkpoint: .*/git_checkpoint: $CURRENT_SHA/" > "$TEMP_FILE"
     mv "$TEMP_FILE" "$STATE_FILE"
 
-    CRITICAL_COUNT=$(echo "$REVIEW" | grep -ci "CRITICAL" || true)
-    WARNING_COUNT=$(echo "$REVIEW" | grep -ci "WARNING" || true)
+    CRITICAL_COUNT=$(echo "$REVIEW" | grep -cE "^(###? )?CRITICAL:" || true)
+    WARNING_COUNT=$(echo "$REVIEW" | grep -cE "^(###? )?WARNING:" || true)
 
     if [[ "$CRITICAL_COUNT" -eq 0 ]] && [[ "$WARNING_COUNT" -eq 0 ]]; then
       jq -n \

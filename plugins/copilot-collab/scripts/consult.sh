@@ -53,5 +53,24 @@ else
     -p "$(cat "$PROMPT_FILE")" 2>/dev/null || echo "Consultation failed. Copilot CLI returned no response.")
 fi
 
+# Save consultation log
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+LOG_FILE="$CONSULT_DIR/${TIMESTAMP}-${CONSULT_TYPE}.md"
+cat > "$LOG_FILE" <<LOG_EOF
+---
+type: $CONSULT_TYPE
+model: $MODEL
+timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+---
+
+# Consultation: $CONSULT_TYPE
+
+## Prompt
+$(cat "$PROMPT_FILE" 2>/dev/null || echo "[prompt file already cleaned up]")
+
+## Response
+$RESPONSE
+LOG_EOF
+
 # Output the response
 echo "$RESPONSE"

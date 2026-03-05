@@ -10,7 +10,7 @@ Execute the setup script to initialize the session:
 
 ```!
 if [ -z "${CLAUDE_SESSION_ID:-}" ]; then echo "ERROR: No session ID. The SessionStart hook may not be registered."; exit 1; fi
-${CLAUDE_PLUGIN_ROOT}/scripts/setup-session.sh $ARGUMENTS
+${CLAUDE_PLUGIN_ROOT}/scripts/setup-session.sh "$ARGUMENTS"
 ```
 
 You are now in a Copilot Collab session. The Stop hook will automatically trigger Copilot reviews at key points.

@@ -19,6 +19,11 @@ if [[ -z "${SESSION_ID:-}" ]]; then
   exit 0
 fi
 
+# Validate session ID format
+if ! [[ "$SESSION_ID" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  exit 0
+fi
+
 # Write to CLAUDE_ENV_FILE so the session ID persists
 if [[ -n "${CLAUDE_ENV_FILE:-}" ]]; then
   printf 'export CLAUDE_SESSION_ID=%q\n' "$SESSION_ID" >> "$CLAUDE_ENV_FILE"
