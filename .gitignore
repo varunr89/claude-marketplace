@@ -3,3 +3,8 @@ node_modules/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Copilot Collab runtime state (per-session, not committed)
+.claude/copilot-collab/sessions/
+.claude/copilot-collab/reviews/
+.claude/copilot-collab/consultations/

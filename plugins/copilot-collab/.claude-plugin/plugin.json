@@ -1,0 +1,9 @@
+{
+  "name": "copilot-collab",
+  "description": "Automated GitHub Copilot CLI reviews and interactive consultations via Stop hooks",
+  "version": "1.0.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["copilot", "code-review", "consultation", "multi-model"]
+}

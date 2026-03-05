@@ -1,0 +1,24 @@
+---
+description: "Start a Copilot-collaborative development session with automated reviews"
+argument-hint: "[task description]"
+allowed-tools: ["Bash(${CLAUDE_PLUGIN_ROOT}/scripts/setup-session.sh:*)"]
+---
+
+# Copilot Collab
+
+Execute the setup script to initialize the session:
+
+```!
+if [ -z "${CLAUDE_SESSION_ID:-}" ]; then echo "ERROR: No session ID. The SessionStart hook may not be registered."; exit 1; fi
+${CLAUDE_PLUGIN_ROOT}/scripts/setup-session.sh $ARGUMENTS
+```
+
+You are now in a Copilot Collab session. The Stop hook will automatically trigger Copilot reviews at key points.
+
+**Your current phase is DESIGNING.** Work on the design/plan for this task using your normal brainstorming and planning workflow. When you finish the design and try to stop, the hook will automatically send it to Copilot for review before you begin implementation.
+
+IMPORTANT: When you write the design plan to a file, update the state file's plan_file field so the hook knows where to find it:
+
+```bash
+sed -i '' "s|^plan_file: .*|plan_file: \"docs/plans/YOUR-PLAN-FILE.md\"|" .claude/copilot-collab/sessions/${CLAUDE_SESSION_ID}.md
+```
