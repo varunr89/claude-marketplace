@@ -5,7 +5,7 @@
     "url": "https://github.com/varunr89"
   },
   "metadata": {
-    "description": "Claude Code plugins for OCR, scheduling, flight search, transcription, and developer workflows",
+    "description": "Claude Code plugins for OCR, scheduling, flight search, transcription, podcasts, and developer workflows",
     "version": "0.1.0"
   },
   "plugins": [
@@ -79,6 +79,12 @@
       "name": "paper-banana",
       "source": "./plugins/paper-banana",
       "description": "Generate publication-ready academic diagrams and plots from paper methodology",
+      "version": "0.1.0"
+    },
+    {
+      "name": "article-podcast",
+      "source": "./plugins/article-podcast",
+      "description": "Convert any URL into a podcast episode with multi-TTS synthesis and RSS publishing",
       "version": "0.1.0"
     }
   ]
