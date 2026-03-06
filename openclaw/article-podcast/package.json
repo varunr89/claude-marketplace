@@ -1,0 +1,19 @@
+{
+  "name": "openclaw-plugin-article-podcast",
+  "version": "0.2.0",
+  "description": "Convert any URL into a podcast episode using multi-TTS synthesis (Gemini, Azure OpenAI, Edge) with RSS publishing",
+  "main": "index.ts",
+  "license": "MIT",
+  "keywords": ["openclaw", "plugin", "podcast", "tts", "gemini", "rss", "text-to-speech"],
+  "files": ["index.ts", "openclaw.plugin.json", "skills/", "requirements.txt"],
+  "openclaw": {
+    "extensions": ["./index.ts"],
+    "install": {
+      "npmSpec": "openclaw-plugin-article-podcast",
+      "defaultChoice": "npm"
+    }
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.0.0"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "id": "openclaw-plugin-article-podcast",
+  "name": "Article Podcast",
+  "description": "Convert any URL into a podcast episode using multi-TTS synthesis (Gemini, Azure OpenAI, Edge) with automatic content classification, voice variety, and RSS publishing",
+  "version": "0.2.0",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "podcast_format": {
+        "type": "string",
+        "description": "Default podcast format: interview, discussion, narrator, or auto (auto-classifies based on content)",
+        "default": "auto"
+      },
+      "tts_fallback_order": {
+        "type": "array",
+        "description": "TTS backend priority order",
+        "items": { "type": "string", "enum": ["gemini", "azure-openai", "edge"] },
+        "default": ["gemini", "azure-openai", "edge"]
+      },
+      "azure_storage_account": {
+        "type": "string",
+        "description": "Azure Storage account name"
+      },
+      "azure_container": {
+        "type": "string",
+        "description": "Azure Blob container name for podcast files",
+        "default": "podcasts"
+      },
+      "feed_title": {
+        "type": "string",
+        "description": "Podcast feed title",
+        "default": "My Reading List"
+      },
+      "feed_author": {
+        "type": "string",
+        "description": "Podcast feed author name"
+      },
+      "feed_description": {
+        "type": "string",
+        "description": "Podcast feed description",
+        "default": "AI-generated podcast episodes from articles and papers"
+      },
+      "feed_url": {
+        "type": "string",
+        "description": "Public URL of the RSS feed XML"
+      },
+      "feed_image_url": {
+        "type": "string",
+        "description": "URL of the podcast cover art image"
+      },
+      "spotify_url": {
+        "type": "string",
+        "description": "Spotify podcast show page URL for notifications"
+      },
+      "azure_tts_endpoint": {
+        "type": "string",
+        "description": "Azure OpenAI TTS endpoint URL (for fallback TTS)"
+      },
+      "azure_tts_api_version": {
+        "type": "string",
+        "description": "Azure OpenAI TTS API version",
+        "default": "2025-03-01-preview"
+      }
+    },
+    "required": ["azure_storage_account", "feed_url"],
+    "additionalProperties": false
+  },
+  "uiHints": {
+    "azure_storage_account": {
+      "label": "Azure Storage Account",
+      "placeholder": "mypodcaststorage"
+    },
+    "feed_url": {
+      "label": "Feed URL",
+      "placeholder": "https://account.blob.core.windows.net/podcasts/feed.xml"
+    }
+  },
+  "skills": ["skills/article-podcast"]
+}

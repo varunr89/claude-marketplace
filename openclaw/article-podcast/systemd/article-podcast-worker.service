@@ -1,0 +1,16 @@
+[Unit]
+Description=Article Podcast Worker
+After=network.target
+
+[Service]
+Type=simple
+Environment="AZURE_STORAGE_CONNECTION_STRING=%h/.bashrc_azure_conn_str"
+EnvironmentFile=-%h/.config/article-podcast-worker/env
+ExecStart=/home/moltbot/.openclaw/extensions/openclaw-plugin-article-podcast/skills/article-podcast/venv/bin/python3 -u /home/moltbot/.openclaw/extensions/openclaw-plugin-article-podcast/skills/article-podcast/scripts/worker.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
