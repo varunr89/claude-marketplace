@@ -86,6 +86,12 @@
       "source": "./plugins/copilot-collab",
       "description": "Automated GitHub Copilot CLI reviews and interactive consultations via Stop hooks",
       "version": "1.0.0"
+    },
+    {
+      "name": "paper-shepherd",
+      "source": "./plugins/paper-shepherd",
+      "description": "AI-guided deep paper understanding using Keshav's three-pass method",
+      "version": "0.1.0"
     }
   ]
 }

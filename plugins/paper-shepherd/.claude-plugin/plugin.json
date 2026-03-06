@@ -1,0 +1,11 @@
+{
+  "name": "paper-shepherd",
+  "description": "AI-guided deep paper understanding using Keshav's three-pass method with progressive disclosure and discussion simulation",
+  "version": "0.1.0",
+  "author": {
+    "name": "Varun R"
+  },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["paper", "research", "academic", "reading", "keshav", "three-pass", "seminar", "teaching"]
+}
