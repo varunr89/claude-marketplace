@@ -76,11 +76,11 @@ printf '%s\n' "$PLAN_CONTENT" >> "$PROMPT_FILE"
 PROMPT_SIZE=$(wc -c < "$PROMPT_FILE" | tr -d ' ')
 if [[ "$PROMPT_SIZE" -gt 100000 ]]; then
   # Large prompt: pipe via stdin
-  REVIEW_OUTPUT=$(cat "$PROMPT_FILE" | copilot \
+  REVIEW_OUTPUT=$(copilot \
     --model "$MODEL" \
     --silent \
     --no-color \
-    -p "" 2>/dev/null || true)
+    -p "" 2>/dev/null < "$PROMPT_FILE" || true)
 else
   # Normal: pass via -p flag
   REVIEW_OUTPUT=$(copilot \

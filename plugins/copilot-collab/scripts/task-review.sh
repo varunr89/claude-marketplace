@@ -61,7 +61,9 @@ trap 'rm -f "$PROMPT_FILE"' EXIT
 cat > "$PROMPT_FILE" <<'PROMPT_EOF'
 Review these code changes for an implementation task.
 PROMPT_EOF
-printf '\nTASK: %s\n\nCHANGED FILES:\n%s\n\nLINES CHANGED: %s\n' "$TASK_DESC" "$CHANGED_FILES" "$LINES_CHANGED" >> "$PROMPT_FILE"
+{
+  printf '\nTASK: %s\n\nCHANGED FILES:\n%s\n\nLINES CHANGED: %s\n' "$TASK_DESC" "$CHANGED_FILES" "$LINES_CHANGED"
+} >> "$PROMPT_FILE"
 cat >> "$PROMPT_FILE" <<'PROMPT_EOF'
 
 Evaluate:
@@ -85,11 +87,11 @@ printf '%s\n' "$DIFF" >> "$PROMPT_FILE"
 # Send to Copilot CLI
 PROMPT_SIZE=$(wc -c < "$PROMPT_FILE" | tr -d ' ')
 if [[ "$PROMPT_SIZE" -gt 100000 ]]; then
-  REVIEW_OUTPUT=$(cat "$PROMPT_FILE" | copilot \
+  REVIEW_OUTPUT=$(copilot \
     --model "$MODEL" \
     --silent \
     --no-color \
-    -p "" 2>/dev/null || echo "Copilot review unavailable. Proceeding without task review.")
+    -p "" 2>/dev/null < "$PROMPT_FILE" || echo "Copilot review unavailable. Proceeding without task review.")
 else
   REVIEW_OUTPUT=$(copilot \
     --model "$MODEL" \

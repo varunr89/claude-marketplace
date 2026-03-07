@@ -85,12 +85,12 @@ $DIFF
 PROMPT_EOF
 
 # Send to Codex (wrap with || true for set -e safety)
-REVIEW_OUTPUT=$(cat "$PROMPT_FILE" | codex exec \
+REVIEW_OUTPUT=$(codex exec \
   -m "$MODEL" \
   -c "model_reasoning_effort=$REASONING" \
   -c 'sandbox_permissions=["disk-read-access"]' \
   -c approval=never \
-  -c full_auto=true 2>/dev/null || echo "Codex review unavailable. Proceeding without task review.")
+  -c full_auto=true 2>/dev/null < "$PROMPT_FILE" || echo "Codex review unavailable. Proceeding without task review.")
 
 # Save full review
 cat > "$REVIEW_FILE" <<EOF

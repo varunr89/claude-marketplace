@@ -61,21 +61,21 @@ $PLAN_CONTENT
 PROMPT_EOF
 
 # Send to Codex (wrap with || true so set -e doesn't kill fallback)
-REVIEW_OUTPUT=$(cat "$PROMPT_FILE" | codex exec \
+REVIEW_OUTPUT=$(codex exec \
   -m "$MODEL" \
   -c model_reasoning_effort=xhigh \
   -c 'sandbox_permissions=["disk-read-access"]' \
   -c approval=never \
-  -c full_auto=true 2>/dev/null || true)
+  -c full_auto=true 2>/dev/null < "$PROMPT_FILE" || true)
 
 # If codex exec failed or returned empty, try simpler invocation
 if [[ -z "$REVIEW_OUTPUT" ]]; then
-  REVIEW_OUTPUT=$(cat "$PROMPT_FILE" | codex exec \
+  REVIEW_OUTPUT=$(codex exec \
     -m "$MODEL" \
     -c model_reasoning_effort=high \
     -c 'sandbox_permissions=["disk-read-access"]' \
     -c approval=never \
-    -c full_auto=true 2>/dev/null || echo "Codex review failed. Proceeding without design review.")
+    -c full_auto=true 2>/dev/null < "$PROMPT_FILE" || echo "Codex review failed. Proceeding without design review.")
 fi
 
 # Save full review

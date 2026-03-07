@@ -40,11 +40,11 @@ mkdir -p "$CONSULT_DIR"
 # Send to Copilot CLI
 PROMPT_SIZE=$(wc -c < "$PROMPT_FILE" | tr -d ' ')
 if [[ "$PROMPT_SIZE" -gt 100000 ]]; then
-  RESPONSE=$(cat "$PROMPT_FILE" | copilot \
+  RESPONSE=$(copilot \
     --model "$MODEL" \
     --silent \
     --no-color \
-    -p "" 2>/dev/null || echo "Consultation failed. Copilot CLI returned no response.")
+    -p "" 2>/dev/null < "$PROMPT_FILE" || echo "Consultation failed. Copilot CLI returned no response.")
 else
   RESPONSE=$(copilot \
     --model "$MODEL" \
