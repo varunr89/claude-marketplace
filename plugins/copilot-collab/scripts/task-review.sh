@@ -57,14 +57,13 @@ REVIEW_FILE="$REVIEW_DIR/task-${TASK_INDEX}-review-$TIMESTAMP.md"
 PROMPT_FILE=$(mktemp)
 trap 'rm -f "$PROMPT_FILE"' EXIT
 
-# Write static prompt preamble with safe variable expansion
-cat > "$PROMPT_FILE" <<'PROMPT_EOF'
+# Write prompt to temp file
+{
+  cat <<'PROMPT_EOF'
 Review these code changes for an implementation task.
 PROMPT_EOF
-{
   printf '\nTASK: %s\n\nCHANGED FILES:\n%s\n\nLINES CHANGED: %s\n' "$TASK_DESC" "$CHANGED_FILES" "$LINES_CHANGED"
-} >> "$PROMPT_FILE"
-cat >> "$PROMPT_FILE" <<'PROMPT_EOF'
+  cat <<'PROMPT_EOF'
 
 Evaluate:
 1. CORRECTNESS: Bugs, logic errors, off-by-one errors?
@@ -81,8 +80,8 @@ Then a brief summary line: N issues found (X critical, Y warning, Z info).
 
 DIFF:
 PROMPT_EOF
-# Safely append untrusted diff content
-printf '%s\n' "$DIFF" >> "$PROMPT_FILE"
+  printf '%s\n' "$DIFF"
+} > "$PROMPT_FILE"
 
 # Send to Copilot CLI
 PROMPT_SIZE=$(wc -c < "$PROMPT_FILE" | tr -d ' ')
