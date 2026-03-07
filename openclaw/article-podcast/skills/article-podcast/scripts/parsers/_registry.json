@@ -1,0 +1,10 @@
+{
+  "patterns": [
+    {"match": "*.pdf", "type": "file_ext", "parser": "pdf.py"},
+    {"match": "youtube.com|youtu.be", "type": "url_pattern", "parser": "youtube.py"},
+    {"match": "*.epub", "type": "file_ext", "parser": "epub.py"},
+    {"match": "*.docx", "type": "file_ext", "parser": "docx.py"},
+    {"match": "*.txt|*.md", "type": "file_ext", "parser": "text.py"},
+    {"match": "*", "type": "fallback", "parser": "web.py"}
+  ]
+}
