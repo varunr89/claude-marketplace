@@ -70,6 +70,31 @@ Read the parsed structure and the user's instructions to decide:
    into overlapping windows (~8,000 words with ~500 word overlap) for
    transcript generation, then stitch the results.
 
+**Complexity Assessment and Knowledge Gap Analysis:**
+
+Before generating transcripts, analyze each episode's content:
+
+- **Target audience:** The listener has an undergraduate-level understanding.
+  Anything beyond that must be explained in the podcast.
+- **Identify knowledge gaps:** Read the content and list the concepts,
+  techniques, or background knowledge the article *assumes* but does not
+  explain. For example, if a paper discusses "policy gradient methods,"
+  the listener needs to understand what a policy is, what gradients are
+  in this context, and why they matter.
+- **Assess complexity:** Based on the density of assumed knowledge, decide
+  how much background explanation is needed. A Paul Graham essay needs
+  little background. A systems paper assuming distributed consensus
+  knowledge needs significant background. A math-heavy ML paper needs
+  the most.
+- **Decide episode length from complexity, not word count.** A simple
+  20K-word opinion piece might need only 10 minutes. A dense 3K-word
+  paper with many knowledge gaps might need 45-60 minutes. Let the
+  content's complexity and the amount of background explanation needed
+  drive the length.
+
+Include your knowledge gap analysis in the subagent prompt (Step 3) so
+the transcript writer knows exactly what to explain.
+
 **Decision guidelines:**
 - User says "split by chapters" -> one episode per section
 - User says "make one episode" -> merge all sections
@@ -96,22 +121,44 @@ For each episode chunk:
 2. Dispatch a subagent with this prompt:
    ```
    Read the content at <temp_file_path>. Write a podcast transcript in
-   <format> format (interview/discussion/narrator). Target ~<N> words
-   (~<M> minutes). This is episode <X> of <Y> in a series about <topic>.
+   <format> format (interview/discussion/narrator).
+   This is episode <X> of <Y> in a series about <topic>.
+
+   TARGET AUDIENCE: The listener has an undergraduate-level understanding.
+   Any concept beyond that must be explained clearly in the podcast.
+
+   KNOWLEDGE GAPS TO FILL:
+   <List the specific concepts/prerequisites you identified in Step 2 that
+   the article assumes but the listener likely doesn't know. Be specific,
+   e.g., "Bellman equations and why they matter for value functions",
+   "how distributed consensus works at a high level", "what policy
+   gradients are and why they're used in RL".>
+
+   DEPTH AND LENGTH:
+   - Do NOT skim the surface. Explain fewer concepts deeply rather than
+     many concepts shallowly.
+   - Weave background explanations naturally into the conversation. When
+     the article introduces an advanced concept, have the speakers pause
+     to build understanding from first principles before proceeding.
+   - Let the content's complexity determine the length. A simple opinion
+     piece might be 1,500 words (~10 minutes). A dense technical paper
+     with many knowledge gaps might need 7,000-9,000 words (~45-60
+     minutes). Use your judgment.
+   - Report your chosen length in estimated_duration_minutes.
 
    Output ONLY valid JSON:
    {
      "title": "<episode title>",
      "format": "<format>",
      "speakers": [{"id": "S1", "role": "host"}, {"id": "S2", "role": "expert"}],
-     "segments": [{"speaker": "S1", "text": "..."}, {"speaker": "S2", "text": "..."}]
+     "segments": [{"speaker": "S1", "text": "..."}, {"speaker": "S2", "text": "..."}],
+     "estimated_duration_minutes": <number>
    }
 
    Rules:
    - Natural speech, not written prose. Use contractions, conversational tone.
    - No stage directions or sound effects.
    - Each segment 1-4 sentences, avoid monologues over ~50 words.
-   - Cover the key points but make it accessible and interesting.
    - Start with a brief hook, do not say "welcome to the podcast."
 
    Save the JSON to <output_path>.

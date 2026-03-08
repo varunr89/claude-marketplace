@@ -112,25 +112,8 @@ def build_transcript_prompt(
         article_text: extracted article text
         fmt: FORMAT_INTERVIEW, FORMAT_DISCUSSION, or FORMAT_NARRATOR
         source_url: original article URL
-        length_minutes: target length in minutes (None = auto based on article length)
+        length_minutes: target length in minutes (None = LLM decides based on complexity)
     """
-    # Estimate target length from article size if not specified
-    if length_minutes is None:
-        word_count = len(article_text.split())
-        if word_count < 1000:
-            length_minutes = 5
-        elif word_count < 3000:
-            length_minutes = 10
-        elif word_count < 6000:
-            length_minutes = 20
-        elif word_count < 12000:
-            length_minutes = 40
-        else:
-            length_minutes = 60
-
-    # Approx words per minute of speech
-    target_words = length_minutes * 150
-
     format_instructions = {
         FORMAT_INTERVIEW: (
             "Format: Interview between a curious host and a knowledgeable expert.\n"
@@ -151,12 +134,6 @@ def build_transcript_prompt(
         ),
     }
 
-    num_speakers_for_format = {
-        FORMAT_INTERVIEW: 2,
-        FORMAT_DISCUSSION: 2,
-        FORMAT_NARRATOR: 1,
-    }
-
     speakers_json = {
         FORMAT_INTERVIEW: [
             {"id": "S1", "role": "host"},
@@ -171,17 +148,39 @@ def build_transcript_prompt(
         ],
     }
 
+    length_instruction = ""
+    if length_minutes is not None:
+        target_words = length_minutes * 150
+        length_instruction = f"Target length: approximately {target_words} words ({length_minutes} minutes of speech).\n"
+
     prompt = f"""You are a podcast script writer. Generate a natural, engaging podcast transcript from the following article.
 
 {format_instructions[fmt]}
 
-Target length: approximately {target_words} words ({length_minutes} minutes of speech).
+TARGET AUDIENCE: The listener has an undergraduate-level understanding.
+Any concept beyond undergraduate level must be explained clearly in the podcast.
 
-IMPORTANT RULES:
+DEPTH AND BACKGROUND RESEARCH:
+- Before writing the transcript, identify concepts, techniques, or background
+  knowledge the article ASSUMES but does not explain.
+- Weave clear explanations of these prerequisites naturally into the conversation.
+  When the article introduces an advanced concept, have the speakers pause to
+  build understanding from first principles before proceeding.
+- Explain fewer concepts deeply rather than many concepts shallowly.
+- Use analogies and concrete examples to make abstract concepts tangible.
+
+EPISODE LENGTH:
+{length_instruction if length_instruction else "Let the content's complexity determine the length. Guideline: ~150 words per minute of speech."}
+- A simple opinion piece or narrative with little assumed knowledge: ~10 minutes.
+- A technical blog post with some assumed knowledge: ~20-30 minutes.
+- A dense academic paper or highly technical content with many prerequisites: ~45-60 minutes.
+- The key driver is how much background explanation the listener needs, not the
+  article's word count. Report your chosen length in estimated_duration_minutes.
+
+RULES:
 - Write natural speech, not written prose. Use contractions, filler words sparingly, and conversational tone.
 - Do NOT include stage directions, sound effects, or non-speech annotations.
 - Each segment should be 1-4 sentences. Avoid monologues longer than ~50 words.
-- Cover the key points of the article but make it accessible and interesting.
 - Start with a brief, engaging hook -- do not say "welcome to the podcast."
 
 Output ONLY valid JSON in this exact format (no markdown code fences, no commentary):
@@ -194,7 +193,7 @@ Output ONLY valid JSON in this exact format (no markdown code fences, no comment
     {{"speaker": "S2", "text": "..."}}
   ],
   "source_url": "{source_url}",
-  "estimated_duration_minutes": {length_minutes}
+  "estimated_duration_minutes": <number based on your complexity assessment>
 }}
 
 Article content:

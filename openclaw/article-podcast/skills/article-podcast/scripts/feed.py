@@ -102,3 +102,87 @@ def parse_feed(feed_xml: str) -> dict:
         "title": channel.find("title").text,
         "episode_count": len(channel.findall("item")),
     }
+
+
+def list_episodes(feed_xml: str) -> list[dict]:
+    """Return a list of episode dicts with title, guid, pubDate, and audio URL."""
+    root = ET.fromstring(feed_xml)
+    channel = root.find("channel")
+    episodes = []
+    for item in channel.findall("item"):
+        enclosure = item.find("enclosure")
+        episodes.append({
+            "title": item.findtext("title", ""),
+            "guid": item.findtext("guid", ""),
+            "pub_date": item.findtext("pubDate", ""),
+            "audio_url": enclosure.get("url", "") if enclosure is not None else "",
+        })
+    return episodes
+
+
+def remove_episodes(feed_xml: str, titles: list[str]) -> tuple[str, int]:
+    """Remove episodes whose titles match any in the given list.
+
+    Returns (updated_xml, count_removed).
+    """
+    root = ET.fromstring(feed_xml)
+    channel = root.find("channel")
+    titles_set = set(titles)
+    to_remove = [item for item in channel.findall("item")
+                 if item.findtext("title", "") in titles_set]
+    for item in to_remove:
+        channel.remove(item)
+    return ET.tostring(root, encoding="unicode", xml_declaration=True), len(to_remove)
+
+
+def set_episode_season(feed_xml: str, title_pattern: str,
+                       season_num: int, episode_num: int | None = None) -> str:
+    """Add itunes:season (and optionally itunes:episode) to episodes matching a regex.
+
+    If episode_num is provided, it is assigned to the first match. Subsequent
+    matches get episode_num+1, episode_num+2, etc. (ordered by pubDate ascending).
+    """
+    import re
+    from email.utils import parsedate_to_datetime
+
+    root = ET.fromstring(feed_xml)
+    channel = root.find("channel")
+    regex = re.compile(title_pattern)
+
+    matches = [item for item in channel.findall("item")
+               if regex.search(item.findtext("title", ""))]
+
+    # Sort by pubDate ascending so oldest gets the lowest episode number
+    def parse_date(item):
+        try:
+            return parsedate_to_datetime(item.findtext("pubDate", ""))
+        except Exception:
+            return datetime.min.replace(tzinfo=timezone.utc)
+
+    matches.sort(key=parse_date)
+
+    for i, item in enumerate(matches):
+        # Remove existing season/episode tags if present
+        for tag in [f"{{{ITUNES_NS}}}season", f"{{{ITUNES_NS}}}episode"]:
+            existing = item.find(tag)
+            if existing is not None:
+                item.remove(existing)
+
+        ET.SubElement(item, f"{{{ITUNES_NS}}}season").text = str(season_num)
+        if episode_num is not None:
+            ET.SubElement(item, f"{{{ITUNES_NS}}}episode").text = str(episode_num + i)
+
+    return ET.tostring(root, encoding="unicode", xml_declaration=True)
+
+
+def set_feed_type(feed_xml: str, feed_type: str = "serial") -> str:
+    """Set the channel-level itunes:type (e.g., 'serial' for season support)."""
+    root = ET.fromstring(feed_xml)
+    channel = root.find("channel")
+    tag = f"{{{ITUNES_NS}}}type"
+    existing = channel.find(tag)
+    if existing is not None:
+        existing.text = feed_type
+    else:
+        ET.SubElement(channel, tag).text = feed_type
+    return ET.tostring(root, encoding="unicode", xml_declaration=True)

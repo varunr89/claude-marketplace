@@ -103,10 +103,9 @@ def generate(
         podcast_format = classify_content(url, article_text[:500])
     _log(f"Format: {podcast_format}")
 
-    # Determine target length (supports extended episodes up to 1 hour+)
-    length_map = {"short": 5, "default": 15, "long": None}
-    length_minutes = length_map.get(length, 15)
-    # "long" scales with article length (auto-detect in build_transcript_prompt)
+    # Let the LLM decide length based on complexity (None = AI decides)
+    length_map = {"short": 10, "default": None, "long": None}
+    length_minutes = length_map.get(length)
 
     # Build prompt and call LLM
     prompt = build_transcript_prompt(
