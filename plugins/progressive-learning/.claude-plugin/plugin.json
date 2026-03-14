@@ -1,0 +1,8 @@
+{
+  "name": "progressive-learning",
+  "description": "Domain-agnostic progressive learning framework. Guides learners through project-based curricula using interleaved learn-build spirals with Socratic teaching. Tracks learner profile across projects for adaptive difficulty.",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "license": "MIT",
+  "keywords": ["learning", "education", "curriculum", "socratic", "project-based-learning"]
+}

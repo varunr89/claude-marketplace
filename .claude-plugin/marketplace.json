@@ -92,6 +92,18 @@
       "source": "./plugins/paper-shepherd",
       "description": "AI-guided deep paper understanding using Keshav's three-pass method",
       "version": "0.1.0"
+    },
+    {
+      "name": "ml-paper-writing",
+      "source": "./plugins/ml-paper-writing",
+      "description": "Write publication-ready ML/AI/Systems papers with writing philosophy, citation verification, and conference checklists",
+      "version": "1.1.0"
+    },
+    {
+      "name": "progressive-learning",
+      "source": "./plugins/progressive-learning",
+      "description": "Domain-agnostic progressive learning framework with Socratic teaching and interleaved learn-build spirals",
+      "version": "0.1.0"
     }
   ]
 }
