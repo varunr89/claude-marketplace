@@ -66,30 +66,94 @@ Once the Learn portion is solid:
 - Preview what they'll build: "Now we're going to implement exactly what you just calculated by hand."
 - Connect the implementation to the theory: "Your code will do the same Bellman update you just did manually, but for every state."
 
-### Build Portion
+### Build Portion -- LeetCode-Style Notebooks
+
+**Delivery format:** Every Build portion is delivered as a self-contained Jupyter notebook in `exercises/`. The notebook is the learner's workspace -- they open it, implement the marked sections, and run the built-in tests to verify.
+
+**Before generating the notebook**, discuss the key design decisions from the phase map with the learner conversationally. Once aligned on the approach, generate the notebook.
 
 Follow this rhythm:
 
-1. **Design decision.** Pose the first design question from the phase map before writing any code.
+1. **Design decisions (conversational).** Pose design questions from the phase map before generating any notebook.
    - "How should we represent the Q-table? What data structure makes sense given that we need to look up Q(s, a)?"
-   - **Wait for their answer.** Discuss their proposal.
+   - **Wait for their answer.** Discuss their proposal. Agree on the approach.
 
-2. **Provide skeleton.** Give them the structure (class, method signatures, imports) and mark where they need to fill in the core logic.
-   - "Here's the solver class with `train()` stubbed out. Your job is to implement the inner loop -- the TD update we just derived."
+2. **Generate the exercise notebook.** Write a generation script, run it, then delete it.
 
-3. **Learner writes code.** Let them write. When they share their code:
+   **Step 1:** Write a Python script at `exercises/_gen_phase_N.py` using the notebook builder:
+
+   ```python
+   import sys, os
+   sys.path.insert(0, "${CLAUDE_PLUGIN_ROOT}/tools")
+   from notebook_builder import md, code, task_header, test_cell, experiment_cell, write_notebook
+
+   cells = [
+       # Title & objectives
+       md("# Phase N: Title -- Build\n\n## Learning Objectives\n- ..."),
+
+       # Imports & constants (learner does not edit)
+       code("# ── Imports (do not edit) ──\nimport numpy as np\n..."),
+
+       # Task A
+       task_header("A", "Task Title", "Instructions...", theory_connection="..."),
+       code("def solve():\n    # YOUR CODE HERE\n    pass"),
+       test_cell("A", "def test_a():\n    assert solve() == 42\ntest_a()"),
+
+       # Visualization
+       code("# ── Visualization (pre-built) ──\n..."),
+
+       # Experiments
+       experiment_cell(1, "Title", "What do you predict?", "print(result)"),
+   ]
+
+   write_notebook(cells, "exercises/phase-N-name.ipynb")
+   ```
+
+   **Step 2:** Run the script: `python3 exercises/_gen_phase_N.py`
+   **Step 3:** Delete the script: `rm exercises/_gen_phase_N.py`
+
+   **Notebook builder API** (from `${CLAUDE_PLUGIN_ROOT}/tools/notebook_builder.py`):
+   - `md(*lines)` -- markdown cell. Pass multiple string args (one per line) or a single multi-line string.
+   - `code(*lines)` -- code cell. Same signature as `md()`.
+   - `task_header(task_id, title, instructions, theory_connection=None)` -- standard task intro with `---` separator.
+   - `test_cell(task_id, test_code)` -- test cell with standard header decoration.
+   - `experiment_cell(number, title, prediction_prompt, experiment_code)` -- predict-then-observe cell with `# YOUR PREDICTION: ???` marker.
+   - `write_notebook(cells, path)` -- write the notebook to disk. Creates parent dirs automatically.
+
+   **Notebook structure (enforced by convention, not the builder):**
+   - **Cell 1 [Markdown]:** Phase title, learning objectives, concepts recap (brief -- they already learned this in the Learn portion)
+   - **Cell 2 [Code]:** All imports, constants, and shared helper code. Fully working -- learner does not edit this.
+   - **Subsequent cells alternate between:**
+     - **[Markdown] Task description** (use `task_header()`): What to implement, why, connection to theory. Include the relevant equation or concept.
+     - **[Code] Skeleton:** Class/function with docstring, type hints, and `# YOUR CODE HERE` markers. Include surrounding context that works. Each skeleton builds on the previous task's solution.
+     - **[Code] Tests** (use `test_cell()`): Assertions that validate the implementation. Print pass/fail clearly. Include at least one test that connects output to the hand exercise from the Learn portion.
+   - **Final cells:**
+     - **[Code] Visualization:** Pre-built rendering code that runs on the learner's completed implementations.
+     - **[Code] Experiments** (use `experiment_cell()`): "Predict then observe" prompts from the phase map.
+
+3. **Tell the learner to open the notebook.** Give the file path and a brief overview:
+   - "Open `exercises/phase-2-bellman.ipynb`. There are 3 implementation tasks that build on each other, followed by a visualization and 2 experiments."
+
+4. **Learner works through the notebook.** When they return with questions or completed work:
    - Ask "why did you..." for non-obvious choices
    - Point to theory: "How does this line relate to the update rule?"
    - For bugs: guide to discovery, don't just fix. "What would Q(s,a) be after this update if reward is -1?"
 
-4. **Run and observe.** Execute the code together. Connect results to theory:
+5. **Run and observe.** Once tests pass, discuss the visualization output. Connect results to theory:
    - "See how the values are higher near the goal? That's the discount factor propagating reward backward."
    - "Compare this to your hand calculation -- does it match?"
 
-5. **Probe deeper.** Ask "what would happen if..." questions:
+6. **Experiments.** Work through the predict-then-observe experiments together:
    - "What if we set epsilon to 0? What policy would the agent learn?"
    - "What happens if learning rate is too high?"
    - These should come from the phase map's verification/experiment suggestions.
+
+**Notebook principles:**
+- Each notebook must be fully self-contained -- no external dependencies on previous notebooks' code. Copy/import what's needed.
+- Tasks within a notebook DO build on each other (Part B uses Part A's output).
+- Tests should be specific and educational -- not just "assert works" but "assert V(0,0) == 0.59 after 2 sweeps" with a comment explaining why.
+- Include `render()` / `visualize()` helpers pre-built so the learner focuses on algorithms, not plotting code.
+- Keep scaffolding minimal as the learner progresses (more skeleton in Phase 1, less in Phase 4).
 
 ### Phase Completion
 
