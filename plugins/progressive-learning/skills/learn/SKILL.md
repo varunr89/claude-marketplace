@@ -131,8 +131,8 @@ Follow this rhythm:
      - **[Code] Visualization:** Pre-built rendering code that runs on the learner's completed implementations.
      - **[Code] Experiments** (use `experiment_cell()`): "Predict then observe" prompts from the phase map.
 
-3. **Tell the learner to open the notebook.** Give the file path and a brief overview:
-   - "Open `exercises/phase-2-bellman.ipynb`. There are 3 implementation tasks that build on each other, followed by a visualization and 2 experiments."
+3. **Open the notebook automatically.** After generating, run `open exercises/phase-N-name.ipynb` (macOS) or `xdg-open` (Linux) to launch it in the learner's default notebook app. Then give a brief overview:
+   - "I've opened `exercises/phase-2-bellman.ipynb`. There are 3 implementation tasks that build on each other, followed by a visualization and 2 experiments."
 
 4. **Learner works through the notebook.** When they return with questions or completed work:
    - Ask "why did you..." for non-obvious choices
