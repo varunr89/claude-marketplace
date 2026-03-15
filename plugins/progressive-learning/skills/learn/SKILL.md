@@ -26,15 +26,17 @@ Every session begins with orientation:
 
 3. **Read the learner profile.** Load `docs/learner-profile.md` if it exists. Note strengths, growth areas, and preferences. These calibrate your teaching.
 
-4. **Scan code state.** Check what files exist in the project directory. Run tests if a test suite exists. This tells you what's been built.
+4. **Ensure environment is ready.** Before any notebook generation, the project must have a working venv with a registered Jupyter kernel. Check if `.venv/bin/python` exists in the project directory. If not, the generation script will create it (see Build Portion below). This is invisible to the learner -- they should never see package errors.
+
+5. **Scan code state.** Check what files exist in the project directory. Run tests if a test suite exists. This tells you what's been built.
 
 5. **Check conversation history.** Search episodic memory for recent sessions on this project. Understand what was last covered.
 
-6. **Propose resumption point.** Based on all the above, tell the learner where you think they are:
+7. **Propose resumption point.** Based on all the above, tell the learner where you think they are:
    - "Looks like you finished the environment implementation last time. The next phase is Value Functions and Bellman. Ready to start?"
    - Or if mid-phase: "Last time we were working on the Q-Learning update rule. Want to pick up there?"
 
-7. **Wait for confirmation.** The learner may redirect: "Actually, I want to revisit X" or "Yes, let's go."
+8. **Wait for confirmation.** The learner may redirect: "Actually, I want to revisit X" or "Yes, let's go."
 
 ---
 
@@ -85,13 +87,25 @@ Follow this rhythm:
    ```python
    import sys, os
    sys.path.insert(0, "${CLAUDE_PLUGIN_ROOT}/tools")
-   from notebook_builder import md, code, task_header, test_cell, experiment_cell, write_notebook
+   from notebook_builder import (
+       md, code, task_header, test_cell, experiment_cell,
+       ensure_env, write_notebook,
+   )
 
+   # ── Environment setup (idempotent) ──
+   # Determines kernel name and required packages from the curriculum.
+   # The learner never sees package errors.
+   KERNEL_NAME = "rl"  # match to project (e.g., "rl", "portfolio", "trading")
+   ensure_env(
+       venv_path=".venv",
+       kernel_name=KERNEL_NAME,
+       kernel_display="RL (Python 3)",
+       packages=["numpy", "matplotlib"],  # add project-specific packages here
+   )
+
+   # ── Notebook cells ──
    cells = [
-       # Title & objectives
        md("# Phase N: Title -- Build\n\n## Learning Objectives\n- ..."),
-
-       # Imports & constants (learner does not edit)
        code("# ── Imports (do not edit) ──\nimport numpy as np\n..."),
 
        # Task A
@@ -106,19 +120,21 @@ Follow this rhythm:
        experiment_cell(1, "Title", "What do you predict?", "print(result)"),
    ]
 
-   write_notebook(cells, "exercises/phase-N-name.ipynb")
+   write_notebook(cells, "exercises/phase-N-name.ipynb",
+                   kernel=KERNEL_NAME, kernel_display="RL (Python 3)")
    ```
 
    **Step 2:** Run the script: `python3 exercises/_gen_phase_N.py`
    **Step 3:** Delete the script: `rm exercises/_gen_phase_N.py`
 
    **Notebook builder API** (from `${CLAUDE_PLUGIN_ROOT}/tools/notebook_builder.py`):
+   - `ensure_env(venv_path, kernel_name, kernel_display, packages)` -- create venv, install packages, register Jupyter kernel. Idempotent.
    - `md(*lines)` -- markdown cell. Pass multiple string args (one per line) or a single multi-line string.
    - `code(*lines)` -- code cell. Same signature as `md()`.
    - `task_header(task_id, title, instructions, theory_connection=None)` -- standard task intro with `---` separator.
    - `test_cell(task_id, test_code)` -- test cell with standard header decoration.
    - `experiment_cell(number, title, prediction_prompt, experiment_code)` -- predict-then-observe cell with `# YOUR PREDICTION: ???` marker.
-   - `write_notebook(cells, path)` -- write the notebook to disk. Creates parent dirs automatically.
+   - `write_notebook(cells, path, kernel, kernel_display)` -- write the notebook to disk. Creates parent dirs. Sets kernel metadata so Jupyter uses the right venv.
 
    **Notebook structure (enforced by convention, not the builder):**
    - **Cell 1 [Markdown]:** Phase title, learning objectives, concepts recap (brief -- they already learned this in the Learn portion)

@@ -172,7 +172,54 @@ def experiment_cell(number, title, prediction_prompt, experiment_code):
     return code("\n".join(lines))
 
 
-def write_notebook(cells, path, kernel="python3"):
+def ensure_env(venv_path, kernel_name, kernel_display, packages):
+    """Ensure a virtual environment exists with required packages and a Jupyter kernel.
+
+    Idempotent -- skips steps that are already done.
+
+    Parameters
+    ----------
+    venv_path : str
+        Path to the virtual environment (e.g., ".venv").
+    kernel_name : str
+        Jupyter kernel name (e.g., "rl").
+    kernel_display : str
+        Display name in Jupyter (e.g., "RL (Python 3)").
+    packages : list[str]
+        Packages to install (e.g., ["numpy", "matplotlib"]).
+    """
+    import subprocess
+    import sys
+
+    venv_path = os.path.abspath(venv_path)
+    python = os.path.join(venv_path, "bin", "python")
+    pip = os.path.join(venv_path, "bin", "pip")
+
+    # Create venv if needed
+    if not os.path.exists(python):
+        print(f"Creating venv at {venv_path}...")
+        subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+
+    # Install packages (pip install is fast when already installed)
+    all_packages = list(packages) + ["ipykernel"]
+    print(f"Installing packages: {', '.join(all_packages)}...")
+    subprocess.run(
+        [pip, "install", "-q"] + all_packages,
+        check=True,
+        capture_output=True,
+    )
+
+    # Register Jupyter kernel (idempotent)
+    subprocess.run(
+        [python, "-m", "ipykernel", "install", "--user",
+         "--name", kernel_name, "--display-name", kernel_display],
+        check=True,
+        capture_output=True,
+    )
+    print(f"Kernel '{kernel_name}' ready.")
+
+
+def write_notebook(cells, path, kernel="python3", kernel_display=None):
     """Write cells to a Jupyter notebook file.
 
     Parameters
@@ -183,6 +230,8 @@ def write_notebook(cells, path, kernel="python3"):
         Output file path (e.g., "exercises/phase-1-mdp.ipynb").
     kernel : str
         Kernel name (default: "python3").
+    kernel_display : str, optional
+        Display name for the kernel. Defaults to kernel name.
 
     Returns
     -------
@@ -194,7 +243,7 @@ def write_notebook(cells, path, kernel="python3"):
         "nbformat_minor": 5,
         "metadata": {
             "kernelspec": {
-                "display_name": "Python 3",
+                "display_name": kernel_display or kernel,
                 "language": "python",
                 "name": kernel,
             },
