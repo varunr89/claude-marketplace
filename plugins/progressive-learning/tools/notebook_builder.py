@@ -172,10 +172,39 @@ def experiment_cell(number, title, prediction_prompt, experiment_code):
     return code("\n".join(lines))
 
 
+def _find_best_python():
+    """Find the latest stable Python 3 interpreter available on this system.
+
+    Checks Homebrew (macOS) and common paths, returns the highest version found.
+    Falls back to sys.executable if nothing newer is available.
+    """
+    import shutil
+    import sys
+
+    candidates = []
+
+    # Check common versioned names (3.14 down to 3.10)
+    for minor in range(14, 9, -1):
+        name = f"python3.{minor}"
+        path = shutil.which(name)
+        if path:
+            candidates.append((minor, path))
+
+    if candidates:
+        best_minor, best_path = max(candidates, key=lambda x: x[0])
+        return best_path
+
+    # Fall back to whatever python3 resolves to
+    path = shutil.which("python3")
+    return path or sys.executable
+
+
 def ensure_env(venv_path, kernel_name, kernel_display, packages):
     """Ensure a virtual environment exists with required packages and a Jupyter kernel.
 
-    Idempotent -- skips steps that are already done.
+    Idempotent -- skips steps that are already done. Always uses the latest
+    stable Python available on the system (checks python3.14 down to python3.10,
+    falls back to python3).
 
     Parameters
     ----------
@@ -189,16 +218,22 @@ def ensure_env(venv_path, kernel_name, kernel_display, packages):
         Packages to install (e.g., ["numpy", "matplotlib"]).
     """
     import subprocess
-    import sys
 
     venv_path = os.path.abspath(venv_path)
     python = os.path.join(venv_path, "bin", "python")
     pip = os.path.join(venv_path, "bin", "pip")
 
-    # Create venv if needed
+    # Create venv if needed, using the best available Python
     if not os.path.exists(python):
-        print(f"Creating venv at {venv_path}...")
-        subprocess.run([sys.executable, "-m", "venv", venv_path], check=True)
+        best_python = _find_best_python()
+        print(f"Creating venv at {venv_path} with {best_python}...")
+        subprocess.run([best_python, "-m", "venv", venv_path], check=True)
+    else:
+        # Verify existing venv Python version
+        result = subprocess.run(
+            [python, "--version"], capture_output=True, text=True
+        )
+        print(f"Existing venv: {result.stdout.strip()}")
 
     # Install packages (pip install is fast when already installed)
     all_packages = list(packages) + ["ipykernel"]
