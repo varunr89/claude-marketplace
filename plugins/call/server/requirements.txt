@@ -1,0 +1,6 @@
+pipecat-ai[twilio,silero]==0.0.74
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+openai==1.82.0
+twilio==9.6.1
+pyngrok==7.2.4

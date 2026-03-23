@@ -1,0 +1,5 @@
+config.json
+audio/*.wav
+server/.venv/
+__pycache__/
+*.pyc
