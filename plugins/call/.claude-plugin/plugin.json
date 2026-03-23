@@ -1,0 +1,9 @@
+{
+  "name": "call",
+  "description": "Make automated phone calls from Claude Code. Leave voicemails, navigate IVR menus, and warm-transfer live humans to your phone. Uses Pipecat + Twilio + Azure OpenAI.",
+  "version": "0.1.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["phone", "call", "voicemail", "twilio", "telephony", "ivr", "pipecat"]
+}

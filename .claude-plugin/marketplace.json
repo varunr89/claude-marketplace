@@ -104,6 +104,12 @@
       "source": "./plugins/progressive-learning",
       "description": "Domain-agnostic progressive learning framework with Socratic teaching and interleaved learn-build spirals",
       "version": "0.1.0"
+    },
+    {
+      "name": "call",
+      "source": "./plugins/call",
+      "description": "Automated phone calls from Claude Code -- voicemail, IVR navigation, and warm transfer using Pipecat + Twilio + Azure OpenAI",
+      "version": "0.1.0"
     }
   ]
 }
