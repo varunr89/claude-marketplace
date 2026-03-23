@@ -1,6 +1,6 @@
 #!/bin/bash
 # Codex Collab SessionEnd Hook
-# Cleans up per-session state file and skip flag when a session ends.
+# Cleans up per-session state file, skip flag, and sentinel file.
 
 set -euo pipefail
 
@@ -25,3 +25,6 @@ REPO_ROOT=$(cd "$CWD" && git rev-parse --show-toplevel 2>/dev/null || echo "$CWD
 # Remove session state file and skip flag if they exist
 rm -f "$REPO_ROOT/.claude/codex-collab/sessions/${SESSION_ID}.md"
 rm -f "$REPO_ROOT/.claude/codex-collab/sessions/${SESSION_ID}.skip"
+
+# Clean up sentinel file
+rm -f "${HOME}/.claude/.codex-collab-session"

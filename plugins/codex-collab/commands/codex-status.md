@@ -7,6 +7,7 @@ description: "Check current Codex Collab session status"
 Read and display the current session state:
 
 ```!
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(cat ~/.claude/.codex-collab-session 2>/dev/null || true)}"
 if [ -z "${CLAUDE_SESSION_ID:-}" ]; then echo "ERROR: No session ID."; exit 1; fi
 STATE_FILE=".claude/codex-collab/sessions/${CLAUDE_SESSION_ID}.md"
 if [ -f "$STATE_FILE" ]; then
