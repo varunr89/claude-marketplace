@@ -24,7 +24,7 @@ def generate_tts(config_path: str, text: str, output_dir: str) -> str:
     client = AzureOpenAI(
         azure_endpoint=az["endpoint"],
         api_key=az["api_key"],
-        api_version="2025-01-01",
+        api_version="2024-12-01-preview",
     )
 
     response = client.audio.speech.create(
