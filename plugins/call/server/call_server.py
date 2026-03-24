@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
         config["twilio"]["account_sid"], config["twilio"]["auth_token"]
     )
     twilio_validator = TwilioValidator(config["twilio"]["auth_token"])
-    PUBLIC_URL = os.environ.get("PUBLIC_URL", "")
+    PUBLIC_URL = os.environ.get("PUBLIC_URL", config.get("public_url", ""))
     yield
 
 

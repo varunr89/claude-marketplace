@@ -30,5 +30,8 @@ def validate_config(cfg: dict) -> None:
                 raise ConfigError(f"Missing config key: {section}.{key}")
     if "transfer_to" not in cfg or not cfg["transfer_to"]:
         raise ConfigError("Missing config key: transfer_to")
-    if "ngrok_auth_token" not in cfg or not cfg["ngrok_auth_token"]:
-        raise ConfigError("Missing config key: ngrok_auth_token")
+    # Need either ngrok_auth_token or public_url (e.g., Tailscale Funnel)
+    has_ngrok = cfg.get("ngrok_auth_token")
+    has_public_url = cfg.get("public_url")
+    if not has_ngrok and not has_public_url:
+        raise ConfigError("Missing config key: ngrok_auth_token or public_url")
