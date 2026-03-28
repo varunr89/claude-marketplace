@@ -22,22 +22,22 @@ fi
 
 echo ""
 echo "--- Twilio ---"
-read -p "Account SID: " TWILIO_SID
-read -p "Auth Token: " TWILIO_TOKEN
-read -p "Phone Number (E.164, e.g. +12065551234): " TWILIO_FROM
+read -rp "Account SID: " TWILIO_SID
+read -rp "Auth Token: " TWILIO_TOKEN
+read -rp "Phone Number (E.164, e.g. +12065551234): " TWILIO_FROM
 
 echo ""
 echo "--- Azure OpenAI ---"
-read -p "Endpoint (e.g. https://xxx.openai.azure.com): " AZURE_ENDPOINT
-read -p "API Key: " AZURE_KEY
+read -rp "Endpoint (e.g. https://xxx.openai.azure.com): " AZURE_ENDPOINT
+read -rp "API Key: " AZURE_KEY
 
 echo ""
 echo "--- Your Phone ---"
-read -p "Transfer-to number (E.164, e.g. +16083207152): " TRANSFER_TO
+read -rp "Transfer-to number (E.164, e.g. +16083207152): " TRANSFER_TO
 
 echo ""
 echo "--- ngrok ---"
-read -p "Auth token: " NGROK_TOKEN
+read -rp "Auth token: " NGROK_TOKEN
 
 cat > "$CONFIG" << EOF
 {
