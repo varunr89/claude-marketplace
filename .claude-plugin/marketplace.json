@@ -94,10 +94,10 @@
       "version": "0.1.0"
     },
     {
-      "name": "ml-paper-writing",
-      "source": "./plugins/ml-paper-writing",
-      "description": "Write publication-ready ML/AI/Systems papers with writing philosophy, citation verification, and conference checklists",
-      "version": "1.1.0"
+      "name": "computer-use",
+      "source": "./plugins/computer-use",
+      "description": "Unified browser and desktop automation agent using Playwright CDP CLI and macOS screencapture + cliclick",
+      "version": "1.0.0"
     },
     {
       "name": "progressive-learning",
