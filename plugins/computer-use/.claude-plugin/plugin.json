@@ -1,0 +1,9 @@
+{
+  "name": "computer-use",
+  "description": "Unified browser and desktop automation agent using Playwright CDP CLI and macOS screencapture + cliclick. No MCP -- minimal context usage.",
+  "version": "1.0.0",
+  "author": { "name": "Varun R" },
+  "repository": "https://github.com/varunr89/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["browser", "automation", "playwright", "desktop", "computer-use", "screencapture", "cliclick", "cdp"]
+}

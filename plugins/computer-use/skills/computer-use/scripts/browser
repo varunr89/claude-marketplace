@@ -1,0 +1,474 @@
+#!/usr/bin/env node
+
+// browser -- Playwright CDP wrapper CLI
+// Usage: browser <command> [args] [--page <id>] [--port <port>] [--path <path>]
+
+import { chromium } from 'playwright-core';
+import { writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+
+// ── Argument Parsing ────────────────────────────────────────────────
+const args = process.argv.slice(2);
+const command = args[0];
+const flags = {};
+const positional = [];
+
+for (let i = 1; i < args.length; i++) {
+  if (args[i] === '--page' && args[i + 1]) {
+    flags.page = args[++i];
+  } else if (args[i] === '--port' && args[i + 1]) {
+    flags.port = args[++i];
+  } else if (args[i] === '--path' && args[i + 1]) {
+    flags.path = args[++i];
+  } else if (args[i] === '--parent') {
+    flags.parent = true;
+  } else {
+    positional.push(args[i]);
+  }
+}
+
+const CDP_PORT = flags.port || '9222';
+const SESSION_ID = process.env.CLAUDE_SESSION_ID || 'default';
+const SESSION_FILE = resolve(tmpdir(), `browser-agent-${SESSION_ID}.json`);
+
+// ── Output Helpers ──────────────────────────────────────────────────
+// ok/fail throw to ensure finally{} block runs (browser.close)
+class OkResult { constructor(data) { this.data = data; } }
+class FailResult { constructor(error) { this.error = error; } }
+
+function ok(data) { throw new OkResult(data); }
+function fail(error) { throw new FailResult(error); }
+
+function writeOk(data) {
+  process.stdout.write(JSON.stringify({ ok: true, ...data }) + '\n');
+}
+function writeFail(error) {
+  process.stderr.write(JSON.stringify({ ok: false, error }) + '\n');
+}
+
+// ── Session State ───────────────────────────────────────────────────
+function saveSession(data) {
+  const existing = loadSession();
+  const merged = { ...existing, ...data };
+  writeFileSync(SESSION_FILE, JSON.stringify(merged));
+}
+
+function loadSession() {
+  if (existsSync(SESSION_FILE)) {
+    try {
+      return JSON.parse(readFileSync(SESSION_FILE, 'utf8'));
+    } catch { return {}; }
+  }
+  return {};
+}
+
+// ── CDP Connection ──────────────────────────────────────────────────
+async function connect() {
+  try {
+    return await chromium.connectOverCDP(`http://localhost:${CDP_PORT}`, {
+      timeout: 5000,
+    });
+  } catch (e) {
+    fail(`Cannot connect to Chrome on localhost:${CDP_PORT}`);
+  }
+}
+
+// ── Page Identity ───────────────────────────────────────────────────
+// Fetch CDP targets to get stable target IDs (not dependent on URL)
+async function buildPageIndex(browser) {
+  // Get CDP target list -- each target has a unique, stable `id`
+  let targets = [];
+  try {
+    const resp = await fetch(`http://localhost:${CDP_PORT}/json`);
+    targets = (await resp.json()).filter(t => t.type === 'page');
+  } catch { /* proceed with empty targets */ }
+
+  // Build ordered list of all Playwright pages
+  const allPages = [];
+  for (const ctx of browser.contexts()) {
+    for (const page of ctx.pages()) {
+      allPages.push(page);
+    }
+  }
+
+  // Match by URL+index to handle duplicate URLs:
+  // CDP /json and Playwright both return pages in creation order
+  const urlCount = new Map();
+  const targetsByUrlIndex = new Map();
+  for (const t of targets) {
+    const idx = urlCount.get(t.url) || 0;
+    targetsByUrlIndex.set(`${t.url}#${idx}`, t.id);
+    urlCount.set(t.url, idx + 1);
+  }
+
+  urlCount.clear();
+  for (const page of allPages) {
+    const url = page.url();
+    const idx = urlCount.get(url) || 0;
+    const targetId = targetsByUrlIndex.get(`${url}#${idx}`);
+    if (targetId) {
+      // Use first 8 chars of CDP target ID as pageId
+      page._stableId = targetId.slice(0, 8).toUpperCase();
+    }
+    urlCount.set(url, idx + 1);
+  }
+
+  return allPages;
+}
+
+function derivePageId(page) {
+  if (page._stableId) return page._stableId;
+  // Fallback: should not normally reach here after buildPageIndex
+  return 'UNKNOWN';
+}
+
+// ── Page Resolution ─────────────────────────────────────────────────
+// Returns page or throws Error (NOT fail()) so callers can catch
+function findPage(allPages, pageId) {
+  for (const page of allPages) {
+    if (derivePageId(page) === pageId) return page;
+  }
+  return null;
+}
+
+function resolvePage(allPages) {
+  if (flags.page) {
+    const page = findPage(allPages, flags.page);
+    if (!page) throw new Error(`Page not found: ${flags.page}`);
+    return page;
+  }
+  const session = loadSession();
+  if (session.lastPageId) {
+    const page = findPage(allPages, session.lastPageId);
+    if (page) return page;
+  }
+  if (allPages.length === 0) throw new Error('No pages open in browser');
+  return allPages[allPages.length - 1];
+}
+
+// ── Frame-Aware Target Resolution ───────────────────────────────────
+async function resolveTarget(allPages) {
+  const page = resolvePage(allPages);
+  const session = loadSession();
+  if (session.activeFrame) {
+    const frameEl = await page.waitForSelector(session.activeFrame, { timeout: 5000 });
+    const frame = await frameEl.contentFrame();
+    if (frame) return { page, frame };
+  }
+  return { page, frame: null };
+}
+
+// ── Commands ────────────────────────────────────────────────────────
+async function main() {
+  if (!command) fail('No command specified. Usage: browser <command> [args]');
+
+  const browser = await connect();
+  let allPages = await buildPageIndex(browser);
+
+  try {
+    switch (command) {
+      case 'tabs': {
+        const tabs = [];
+        for (const page of allPages) {
+          tabs.push({
+            pageId: derivePageId(page),
+            title: await page.title(),
+            url: page.url(),
+          });
+        }
+        ok({ tabs });
+        break;
+      }
+
+      case 'navigate': {
+        const url = positional[0];
+        if (!url) fail('Usage: browser navigate <url>');
+        let page;
+        try {
+          page = resolvePage(allPages);
+        } catch {
+          // No usable page -- create a fresh agent tab
+          const ctx = browser.contexts()[0];
+          if (!ctx) fail('No browser contexts found');
+          page = await ctx.newPage();
+        }
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        // Re-index after navigation (target ID may change)
+        allPages = await buildPageIndex(browser);
+        const pageId = derivePageId(page);
+        saveSession({ lastPageId: pageId });
+        ok({ pageId, title: await page.title(), url: page.url() });
+        break;
+      }
+
+      case 'snapshot': {
+        const page = resolvePage(allPages);
+        // Use ariaSnapshot (works over CDP, unlike page.accessibility.snapshot)
+        const snapshot = await page.locator(':root').ariaSnapshot();
+        const result = { snapshot, pageId: derivePageId(page) };
+        if (!snapshot || snapshot.length < 50) {
+          result.warning = 'Accessibility tree is empty or minimal';
+        }
+        ok(result);
+        break;
+      }
+
+      case 'click': {
+        const selector = positional[0];
+        if (!selector) fail('Usage: browser click <selector>');
+        const page = resolvePage(allPages);
+        // Listen for popup/new tab before clicking
+        let newPage = null;
+        const popupPromise = new Promise(res => {
+          page.context().once('page', p => { newPage = p; res(); });
+          setTimeout(res, 2000); // Don't wait forever
+        });
+        await page.click(selector, { timeout: 10000 });
+        await popupPromise;
+        const result = { clicked: selector };
+        if (newPage) {
+          allPages = await buildPageIndex(browser);
+          result.newPageId = derivePageId(newPage);
+          result.newPageUrl = newPage.url();
+        }
+        ok(result);
+        break;
+      }
+
+      case 'type': {
+        const selector = positional[0];
+        const text = positional.slice(1).join(' ');
+        if (!selector || !text) fail('Usage: browser type <selector> <text>');
+        const page = resolvePage(allPages);
+        try {
+          await page.fill(selector, text, { timeout: 10000 });
+        } catch {
+          // Fallback for contenteditable elements
+          await page.click(selector);
+          await page.keyboard.type(text);
+        }
+        ok({ typed: text, into: selector });
+        break;
+      }
+
+      case 'screenshot': {
+        const page = resolvePage(allPages);
+        const screenshotPath = flags.path || resolve(tmpdir(),
+          `browser-${SESSION_ID}-${Date.now()}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false });
+        chmodSync(screenshotPath, 0o600);
+        ok({ path: screenshotPath });
+        break;
+      }
+
+      case 'scroll': {
+        const direction = positional[0];
+        const amount = parseInt(positional[1] || '500', 10);
+        if (!direction) fail('Usage: browser scroll <up|down|left|right> [amount]');
+        const page = resolvePage(allPages);
+        const scrollMap = {
+          up: [0, -amount], down: [0, amount],
+          left: [-amount, 0], right: [amount, 0],
+        };
+        const pair = scrollMap[direction];
+        if (!pair) fail(`Invalid direction: ${direction}`);
+        const [x, y] = pair;
+        await page.evaluate(([sx, sy]) => window.scrollBy(sx, sy), [x, y]);
+        ok({ scrolled: direction, amount });
+        break;
+      }
+
+      case 'back': {
+        const page = resolvePage(allPages);
+        await page.evaluate(() => history.back());
+        await page.waitForLoadState('domcontentloaded').catch(() => {});
+        ok({ url: page.url() });
+        break;
+      }
+
+      case 'forward': {
+        const page = resolvePage(allPages);
+        await page.evaluate(() => history.forward());
+        await page.waitForLoadState('domcontentloaded').catch(() => {});
+        ok({ url: page.url() });
+        break;
+      }
+
+      case 'eval': {
+        const js = positional.join(' ');
+        if (!js) fail('Usage: browser eval <javascript>');
+        const page = resolvePage(allPages);
+        const evalResult = await page.evaluate(js);
+        ok({ result: String(evalResult) });
+        break;
+      }
+
+      case 'wait': {
+        const selector = positional[0];
+        const timeoutSec = parseInt(positional[1] || '10', 10);
+        const timeoutMs = timeoutSec * 1000;
+        if (!selector) fail('Usage: browser wait <selector> [timeout_seconds]');
+        const page = resolvePage(allPages);
+        // Poll with page.evaluate for CDP reliability (waitForSelector
+        // can throw non-Error objects over CDP connections)
+        const start = Date.now();
+        let found = false;
+        while (Date.now() - start < timeoutMs) {
+          found = await page.evaluate((sel) => !!document.querySelector(sel), selector);
+          if (found) break;
+          await new Promise(r => setTimeout(r, 200));
+        }
+        if (found) {
+          ok({ found: selector });
+        } else {
+          fail(`Element not found within ${timeoutSec}s: ${selector}`);
+        }
+        break;
+      }
+
+      case 'pdf': {
+        // NOTE: page.pdf() may not work over CDP with headed Chrome.
+        const pdfPath = positional[0];
+        if (!pdfPath) fail('Usage: browser pdf <path>');
+        const page = resolvePage(allPages);
+        try {
+          await page.pdf({ path: pdfPath });
+          ok({ path: pdfPath });
+        } catch (e) {
+          fail(`PDF generation failed (may require headless Chrome): ${e.message}`);
+        }
+        break;
+      }
+
+      case 'tab': {
+        const index = parseInt(positional[0], 10);
+        if (isNaN(index)) fail('Usage: browser tab <index>');
+        if (index < 0 || index >= allPages.length) {
+          fail(`Tab index ${index} out of range (0-${allPages.length - 1})`);
+        }
+        const page = allPages[index];
+        await page.bringToFront();
+        const pageId = derivePageId(page);
+        saveSession({ lastPageId: pageId });
+        ok({ pageId, title: await page.title(), url: page.url() });
+        break;
+      }
+
+      case 'upload': {
+        const selector = positional[0];
+        const filepath = positional[1];
+        if (!selector || !filepath) fail('Usage: browser upload <selector> <filepath>');
+        const page = resolvePage(allPages);
+        try {
+          await page.setInputFiles(selector, filepath, { timeout: 10000 });
+          ok({ uploaded: filepath, to: selector });
+        } catch (e) {
+          fail(`Upload failed: ${e.message}`);
+        }
+        break;
+      }
+
+      case 'click-and-download': {
+        // Compound: arm download listener, click, wait for download
+        const selector = positional[0];
+        if (!selector) fail('Usage: browser click-and-download <selector>');
+        const page = resolvePage(allPages);
+        try {
+          const [download] = await Promise.all([
+            page.waitForEvent('download', { timeout: 15000 }),
+            page.click(selector, { timeout: 10000 }),
+          ]);
+          const dlPath = await download.path();
+          ok({
+            path: dlPath,
+            suggestedFilename: download.suggestedFilename(),
+            url: download.url(),
+          });
+        } catch (e) {
+          fail(`Download failed: ${e.message}`);
+        }
+        break;
+      }
+
+      case 'click-and-dialog': {
+        // Compound: arm dialog handler, click, return dialog info
+        const selector = positional[0];
+        const action = positional[1]; // 'accept' or 'dismiss'
+        const text = positional[2];   // optional prompt response
+        if (!selector || !action || !['accept', 'dismiss'].includes(action)) {
+          fail('Usage: browser click-and-dialog <selector> <accept|dismiss> [text]');
+        }
+        const page = resolvePage(allPages);
+        let dialogInfo = null;
+        page.once('dialog', async dialog => {
+          dialogInfo = { type: dialog.type(), message: dialog.message() };
+          if (action === 'accept') {
+            await dialog.accept(text || '');
+          } else {
+            await dialog.dismiss();
+          }
+        });
+        try {
+          await page.click(selector, { timeout: 10000 });
+          // Give dialog a moment to fire
+          await page.waitForTimeout(500);
+          if (dialogInfo) {
+            ok({ handled: action, dialog: dialogInfo });
+          } else {
+            ok({ handled: action, dialog: null, note: 'No dialog appeared after click' });
+          }
+        } catch (e) {
+          fail(`Click-and-dialog failed: ${e.message}`);
+        }
+        break;
+      }
+
+      case 'frame': {
+        if (flags.parent) {
+          saveSession({ activeFrame: null });
+          ok({ frame: 'main' });
+          break;
+        }
+        const selector = positional[0];
+        if (!selector) fail('Usage: browser frame <selector> or browser frame --parent');
+        const page = resolvePage(allPages);
+        try {
+          const frameElement = await page.waitForSelector(selector, { timeout: 5000 });
+          const frame = await frameElement.contentFrame();
+          if (!frame) fail(`Element ${selector} is not an iframe`);
+          saveSession({ activeFrame: selector });
+          ok({ frame: selector, frameUrl: frame.url() });
+        } catch (e) {
+          fail(`Frame not found: ${e.message}`);
+        }
+        break;
+      }
+
+      default:
+        fail(`Unknown command: ${command}`);
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
+// ── Timeout Guard ───────────────────────────────────────────────────
+const TIMEOUT = 30000;
+const timer = setTimeout(() => {
+  writeFail('Timeout after 30s');
+  process.exit(1);
+}, TIMEOUT);
+
+main().catch(e => {
+  if (e instanceof OkResult) {
+    writeOk(e.data);
+    process.exit(0);
+  } else if (e instanceof FailResult) {
+    writeFail(e.error);
+    process.exit(1);
+  } else {
+    writeFail(e.message);
+    process.exit(1);
+  }
+}).finally(() => clearTimeout(timer));

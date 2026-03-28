@@ -1,0 +1,138 @@
+#!/bin/bash
+# desktop -- macOS desktop automation CLI
+# Usage: desktop <command> [args]
+# Returns JSON to stdout.
+# Requires: cliclick, screencapture, Accessibility + Screen Recording permissions
+
+set -euo pipefail
+
+COMMAND="${1:-}"
+shift 1 2>/dev/null || true
+
+# ── Scale Factor Detection ───────────────────────────────────────────
+get_scale_factor() {
+  if system_profiler SPDisplaysDataType 2>/dev/null | grep -qi 'retina'; then
+    echo 2
+  else
+    echo 1
+  fi
+}
+
+SCALE=$(get_scale_factor)
+
+# ── Output Helpers ───────────────────────────────────────────────────
+json_ok() {
+  echo "$1"
+  exit 0
+}
+
+json_fail() {
+  echo "{\"ok\": false, \"error\": \"$1\"}"
+  exit 1
+}
+
+# ── Coordinate Scaling ───────────────────────────────────────────────
+# Agent provides coordinates in screenshot pixel space.
+# We divide by scale factor for cliclick (logical points).
+scale_coord() {
+  echo $(( $1 / SCALE ))
+}
+
+# ── Dependency Check ─────────────────────────────────────────────────
+require_cliclick() {
+  if ! command -v cliclick &>/dev/null; then
+    json_fail "cliclick not installed. Run: brew install cliclick"
+  fi
+}
+
+# ── Commands ─────────────────────────────────────────────────────────
+case "${COMMAND}" in
+  screenshot)
+    local_path="${1:-/tmp/desktop-$$-$(date +%s).png}"
+    screencapture -x "$local_path" 2>/dev/null || json_fail "screencapture failed"
+    chmod 600 "$local_path"
+    # Get dimensions
+    dims=$(sips -g pixelWidth -g pixelHeight "$local_path" 2>/dev/null \
+      | awk '/pixelWidth/{w=$2} /pixelHeight/{h=$2} END{print w"x"h}')
+    json_ok "{\"ok\": true, \"path\": \"$local_path\", \"dimensions\": \"$dims\", \"scale\": $SCALE}"
+    ;;
+
+  click)
+    require_cliclick
+    x=$(scale_coord "${1:?Usage: desktop click <x> <y>}")
+    y=$(scale_coord "${2:?Usage: desktop click <x> <y>}")
+    cliclick "c:$x,$y" 2>/dev/null || json_fail "click failed at $x,$y"
+    json_ok "{\"ok\": true, \"clicked\": [$x, $y], \"logical\": true}"
+    ;;
+
+  doubleclick)
+    require_cliclick
+    x=$(scale_coord "${1:?Usage: desktop doubleclick <x> <y>}")
+    y=$(scale_coord "${2:?Usage: desktop doubleclick <x> <y>}")
+    cliclick "dc:$x,$y" 2>/dev/null || json_fail "doubleclick failed"
+    json_ok "{\"ok\": true, \"doubleclicked\": [$x, $y]}"
+    ;;
+
+  rightclick)
+    require_cliclick
+    x=$(scale_coord "${1:?Usage: desktop rightclick <x> <y>}")
+    y=$(scale_coord "${2:?Usage: desktop rightclick <x> <y>}")
+    cliclick "rc:$x,$y" 2>/dev/null || json_fail "rightclick failed"
+    json_ok "{\"ok\": true, \"rightclicked\": [$x, $y]}"
+    ;;
+
+  move)
+    require_cliclick
+    x=$(scale_coord "${1:?Usage: desktop move <x> <y>}")
+    y=$(scale_coord "${2:?Usage: desktop move <x> <y>}")
+    cliclick "m:$x,$y" 2>/dev/null || json_fail "move failed"
+    json_ok "{\"ok\": true, \"moved\": [$x, $y]}"
+    ;;
+
+  type)
+    require_cliclick
+    text="${1:-}"
+    cliclick "t:$text" 2>/dev/null || json_fail "type failed"
+    # Escape special JSON chars with python3 (available on all macOS)
+    escaped=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$text")
+    echo "{\"ok\": true, \"typed\": $escaped}"
+    exit 0
+    ;;
+
+  key)
+    require_cliclick
+    key="${1:?Usage: desktop key <key>}"
+    # Handle modifier combos like "cmd+c" -> kd:cmd kp:c ku:cmd
+    # Compatible with Bash 3.2 (macOS default) -- no negative indices
+    if [[ "$key" == *"+"* ]]; then
+      IFS='+' read -ra parts <<< "$key"
+      last_idx=$(( ${#parts[@]} - 1 ))
+      cmds=()
+      for ((i=0; i<last_idx; i++)); do
+        cmds+=("kd:${parts[$i]}")
+      done
+      cmds+=("kp:${parts[$last_idx]}")
+      for ((i=last_idx-1; i>=0; i--)); do
+        cmds+=("ku:${parts[$i]}")
+      done
+      cliclick "${cmds[@]}" 2>/dev/null || json_fail "key combo failed"
+    else
+      cliclick "kp:$key" 2>/dev/null || json_fail "key press failed"
+    fi
+    json_ok "{\"ok\": true, \"pressed\": \"$key\"}"
+    ;;
+
+  drag)
+    require_cliclick
+    x1=$(scale_coord "${1:?Usage: desktop drag <x1> <y1> <x2> <y2>}")
+    y1=$(scale_coord "${2:?}")
+    x2=$(scale_coord "${3:?}")
+    y2=$(scale_coord "${4:?}")
+    cliclick "dd:$x1,$y1" "du:$x2,$y2" 2>/dev/null || json_fail "drag failed"
+    json_ok "{\"ok\": true, \"dragged\": {\"from\": [$x1,$y1], \"to\": [$x2,$y2]}}"
+    ;;
+
+  *)
+    json_fail "Unknown command: ${COMMAND}. Available: screenshot, click, doubleclick, rightclick, move, type, key, drag"
+    ;;
+esac

@@ -1,0 +1,10 @@
+{
+  "name": "computer-use-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "CLI wrappers for browser (Playwright CDP) and desktop (screencapture + cliclick) automation",
+  "dependencies": {
+    "playwright-core": "^1.52.0"
+  }
+}
