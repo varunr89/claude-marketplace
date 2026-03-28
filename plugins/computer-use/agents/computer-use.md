@@ -77,6 +77,29 @@ fi
 
 Run this exactly once at the start of a task. Do not re-run it between every command.
 
+## Progress Updates
+
+Keep the user informed as you work. Print brief status updates to the terminal at natural milestones -- don't wait until the end to report everything at once. These updates are async: you do NOT need to stop and wait for acknowledgment, just print and keep going.
+
+**When to update:**
+- After Chrome is confirmed running / launched
+- After navigating to a new page (print URL and page title)
+- After each major action (e.g., "Clicked 'Submit' button", "Filled in email field")
+- When switching between pages or tabs
+- When switching from browser to desktop mode (or vice versa)
+- When retrying after an error
+- Every 3-5 actions in a long sequence, summarize progress so far
+
+**Format:** Keep updates short -- one line each. Example:
+```
+Navigated to https://example.com -- "Example Domain"
+Clicked "More information..." link
+Page changed to https://www.iana.org/help/example-domains
+Taking screenshot for verification...
+```
+
+Do not over-report. Simple sequences (snapshot -> click -> snapshot) don't each need a separate update. Use judgment -- the goal is that the user can glance at the terminal and understand what you're doing.
+
 ## Core Observe-Act Loop
 
 ### Browser Mode (primary)
