@@ -10,10 +10,17 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
 # ── Session ID resolution ───────────────────────────────────────────
 
+# Try env var first, then sentinel file as fallback
 SESSION_ID="${CODEX_COLLAB_SESSION_ID:-${CLAUDE_SESSION_ID:-}}"
 if [[ -z "$SESSION_ID" ]]; then
+  SENTINEL_FILE="${HOME}/.claude/.codex-collab-session"
+  if [[ -f "$SENTINEL_FILE" ]]; then
+    SESSION_ID=$(cat "$SENTINEL_FILE")
+  fi
+fi
+if [[ -z "$SESSION_ID" ]]; then
   echo "ERROR: No session ID available. CLAUDE_SESSION_ID must be set by the SessionStart hook." >&2
-  echo "This usually means the session-start-hook.sh is not registered in ~/.claude/settings.json." >&2
+  echo "This usually means the session-start-hook.sh is not registered in hooks/hooks.json." >&2
   exit 1
 fi
 
